@@ -1,0 +1,313 @@
+<div id="app">
+    <!-- 主标题 -->
+    <h1 class="app_title">猫眼电影可视化展示</h1>
+    <!-- 开始按钮 -->
+    <a href="#intro" class="app_btn">开始</a>
+    <!-- 关于我们 -->
+    <div id="intro" :style="`top: ${introHeight}`">
+        <el-card>
+            <div slot="header" class="clearfix">
+                <span>
+                    <i class="el-icon-document"></i>
+                    [[title]]
+                </span>
+            </div>
+            <p class="intro__txt">[[content]]</p>
+            <el-divider></el-divider>
+            <!-- 贡献者 -->
+            <div class="intro__cb">
+                <div class="intro__cb__hd">
+                    <p>
+                        <i class="el-icon-s-custom"></i>
+                        贡献者
+                    </p>
+                    <span>5</span>
+                </div>
+                <div class="intro__cb__bd">
+                    <div v-for="(item, i) in contributors" :key="i">
+                        <el-avatar size="small" :src="item.url" fit="cover"></el-avatar>
+                        <span class="cb__name">[[item.name]]</span>
+                    </div>
+                </div>
+            </div>
+        </el-card>
+    </div>
+    <!-- 主体内容 -->
+    <el-card class="box-card" :style="`top: ${mainHeight}`">
+        <!-- 导航栏 -->
+        <el-tabs v-model="activeName">
+            <el-tab-pane label="了解电影" name="first">
+                <div class="know">
+                    <!-- 电影发展史 -->
+                    <h2>
+                        <i class="el-icon-data-line"></i>
+                        电影发展史
+                    </h2>
+                    <div class="know_bd">
+                        <div class="know_bd_pic">
+                            <div id="vis"></div>
+                            <span>电影时长逐年变化图（1980-2020）</span>
+                        </div>
+                        <div class="know_bd_pic">
+                            <div id="vis2"></div>
+                            <span>电影质量（评分）逐年变化图（1980-2020）</span>
+                        </div>
+                    </div>
+                </div>
+            </el-tab-pane>
+            <el-tab-pane label="电影特点" name="second">
+                <div class="genre">
+                    <!-- 电影特点 -->
+                    <div class="genre_pic">
+                        <h2>
+                            <i class="el-icon-s-data"></i>
+                            电影类型柱状图
+                        </h2>
+                        <div id="vis4"></div>
+                    </div>
+                    <div class="genre_bar">
+                        <h3>最受欢迎电影类型均分</h3>
+                        <el-button type="primary" size="medium" @click="isShow = true">点击查看</el-button>
+                        <div id="vis3" v-show="isShow"></div>
+                    </div>
+                </div>
+            </el-tab-pane>
+            <el-tab-pane label="挑选电影" name="third">
+                <div class="pick">
+                    <!-- 电影类型评分排行榜 -->
+                    <div v-if="!isActive" class="pick__rank">
+                        <h2>
+                            <i class="el-icon-trophy"></i>
+                            电影评分排行榜
+                        </h2>
+                        <el-select v-model="type1" @change="getData" placeholder="请选择电影类型">
+                            <el-option v-for="(item, i) in options" :key="i" :label="item" :value="item">
+                            </el-option>
+                        </el-select>
+                        <el-table :data="filmRank" height="500">
+                            <el-table-column type="index" label="#">
+                            </el-table-column>
+                            <el-table-column prop="film" label="电影名称">
+                            </el-table-column>
+                            <el-table-column label="评分">
+                                <template slot-scope="scope">
+                                    <el-tag type="primary">[[scope.row.rate]]</el-tag>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <el-button type="primary" size="medium" icon="el-icon-caret-right" @click="isActive = true">评分明细
+                        </el-button>
+                    </div>
+                    <!-- 电影类型评分详情 -->
+                    <div v-else class="pick__detail">
+                        <el-page-header @back="isActive = false" content="评分明细">
+                        </el-page-header>
+                        <el-select v-model="type2" placeholder="请选择电影类型" @change="getData">
+                            <el-option v-for="(item, i) in options" :key="i" :label="item" :value="item">
+                            </el-option>
+                        </el-select>
+                        <div id="vis6"></div>
+                    </div>
+                </div>
+            </el-tab-pane>
+            <el-tab-pane label="电影推荐" name="fourth">
+                <div class="recom">
+                    <!-- 电影推荐 -->
+                    <h2>
+                        <i class="el-icon-video-camera-solid"></i>
+                        导演推荐
+                    </h2>
+                    <div class="recom_ranks">
+                        <div class="recom_ranks_part">
+                            <span class="title">电影数量前五十的导演</span>
+                            <el-table :data="direcNum" height="500">
+                                <el-table-column type="index" label="#">
+                                </el-table-column>
+                                <el-table-column prop="direc" label="导演">
+                                </el-table-column>
+                                <el-table-column label="电影数量">
+                                    <template slot-scope="scope">
+                                        <el-tag type="primary">[[scope.row.num]]</el-tag>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+                        <div class="recom_ranks_part">
+                            <span class="title">电影数量前五十导演作品的平均分</span>
+                            <el-table :data="direcRate" height="500">
+                                <el-table-column type="index" label="#">
+                                </el-table-column>
+                                <el-table-column prop="direc" label="导演">
+                                </el-table-column>
+                                <el-table-column label="平均分">
+                                    <template slot-scope="scope">
+                                        <el-tag type="primary">[[scope.row.rate]]</el-tag>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+                    </div>
+                </div>
+            </el-tab-pane>
+        </el-tabs>
+    </el-card>
+</div>
+
+<script>
+    new Vue({
+        el: "#app",
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                type1: "剧情",
+                type2: "剧情",
+                activeName: 'first',
+                introHeight: '',
+                mainHeight: '',
+                contributors: [{
+                        url: '../static/img/avatar/czb.jpg',
+                        name: '陈志斌'
+                    },
+                    {
+                        url: '../static/img/avatar/hxh.jpg',
+                        name: '何晓华'
+                    },
+                    {
+                        url: '../static/img/avatar/hwc.jpg',
+                        name: '何文创'
+                    },
+                    {
+                        url: '../static/img/avatar/zmw.jpg',
+                        name: '张明威'
+                    },
+                    {
+                        url: '../static/img/avatar/xxy.jpg',
+                        name: '夏心瑶'
+                    }
+                ],
+                title: '关于项目',
+                content: '本项目通过对猫眼电影网站的电影数据进行分析，了解电影时长和质量随时代发展的变化，根据电影评分与电影类型的关系得出受观众欢迎的电影类型，及该类型的高分电影，并得出电影均分最高的导演，以帮助用户挑选心仪的电影观看。',
+                isShow: false,
+                isActive: false,
+                options: [],
+                tableData: [{
+                    film: '陈志斌',
+                    rate: '阿拉伯联合酋长国迪拜市阿拉伯塔酒店顶楼'
+                }, {
+                    film: '陈志斌',
+                    rate: '阿拉伯联合酋长国迪拜市阿拉伯塔酒店顶楼'
+                }, {
+                    film: '陈志斌',
+                    rate: '阿拉伯联合酋长国迪拜市阿拉伯塔酒店顶楼'
+                }, {
+                    film: '陈志斌',
+                    rate: '阿拉伯联合酋长国迪拜市阿拉伯塔酒店顶楼'
+                }],
+                filmRank: null,
+                direcNum: null,
+                direcRate: null
+            }
+        },
+        methods: {
+            getData() {
+                axios //通过axios向data路径发送请求获得数据
+                    .get("/data", {
+                        params: {
+                            type1: this.type1,
+                            type2: this.type2
+                        }
+                    })
+                    .then(res => { //链式调用
+                        this.options = res.data.all;
+                        // 通过vega这个库显示出来
+                        vegaEmbed("#vis", res.data.fig, {
+                            mode: "vega-lite"
+                        });
+                        vegaEmbed("#vis2", res.data.fig2, {
+                            mode: "vega-lite"
+                        });
+                        vegaEmbed("#vis3", res.data.fig3, {
+                            mode: "vega-lite"
+                        });
+                        vegaEmbed("#vis4", res.data.fig4, {
+                            mode: "vega-lite"
+                        });
+                        vegaEmbed("#vis6", res.data.fig6, {
+                            mode: "vega-lite"
+                        });
+                        this.filmRank = res.data.fig5
+                        this.direcNum = res.data.fig7;
+                        this.direcRate = res.data.fig8;
+                        this.handleData1(this.filmRank)
+                        this.handleData2(this.direcNum)
+                        this.handleData3(this.direcRate)
+                    });
+            },
+            handleData1(obj) {
+                let list = []
+                for (let i = 0; i < 20; i++) {
+                    list[i] = {
+                        film: null,
+                        rate: null
+                    }
+                }
+                for (let i = 0; i < Object.values(obj).length; i++) {
+                    let item = Object.values(obj)[i]
+                    for (let j = 0; j < 20; j++) {
+                        let el = Object.values(item)[j]
+                        if (list[j].film) {
+                            list[j].rate = +el
+                        } else {
+                            list[j].film = el
+                        }
+                    }
+                }
+                this.filmRank = list.sort((a, b) => {
+                    return (b.rate - a.rate)
+                })
+            },
+            handleData2(obj) {
+                let list = []
+                for (let i = 0; i < 50; i++) {
+                    list[i] = {
+                        direc: null,
+                        num: null
+                    }
+                }
+                for (let i = 0; i < Object.values(obj).length; i++) {
+                    let item = Object.values(obj)[i]
+                    for (let j = 0; j < 50; j++) {
+                        let el = Object.values(item)[j]
+                        if (list[j].num) {
+                            list[j].direc = el
+                        } else {
+                            list[j].num = +el
+                        }
+                    }
+                }
+                this.direcNum = list.sort((a, b) => {
+                    return (b.num - a.num)
+                })
+            },
+            handleData3(obj) {
+                let list = []
+                for (let i = 0; i < Object.keys(obj).length; i++) {
+                    let key = Object.keys(obj)[i]
+                    let val = obj[key]
+                    list[i] = {
+                        direc: key,
+                        rate: +val.toFixed(1)
+                    }
+                }
+                this.direcRate = list.sort((a, b) => {
+                    return (b.rate - a.rate)
+                })
+            }
+        },
+        mounted() {
+            this.getData()
+            this.introHeight = window.innerHeight + 'px'
+            this.mainHeight = window.innerHeight * 2 + 'px'
+        },
+    });
+</script>
